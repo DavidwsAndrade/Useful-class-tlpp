@@ -1,0 +1,82 @@
+#include 'tlpp-core.th'
+#include 'protheus.ch'
+
+#define T_PDF 1
+
+namespace myspace
+
+class FormData
+
+    private data cBoundary  as character
+    private data cEndBoundary as character
+    private data cBody as character
+    private data cSpaceToContent as character
+    
+    public method New()
+    public method Init()
+    public method Append() as logical
+    public method GetBodyContent() as character
+    public method GetBoundary() as character
+    public method SetBoundary()
+
+endclass
+
+
+method New() class FormData
+    ::cBoundary := ""
+    ::cEndBoundary := ""
+    ::cBody := ""
+    ::cSpaceToContent := CRLF + CRLF
+return self
+
+
+method Init() class FormData
+    ::SetBoundary()
+return
+
+
+method GetBoundary() as character class FormData
+return ::cBoundary
+
+
+method SetBoundary(cBoundary as character) class FormData
+    default cBoundary := ''
+
+    ::cBoundary := cBoundary
+
+    if empty(cBoundary) //Boundary default utilizado para arquivos .pdf
+        ::cBoundary := '------WebKitFormBoundary7MA4YWxkTrZu0gW'
+    endif
+
+    ::cEndBoundary := ::cBoundary + "--"
+return
+
+
+method Append(cKey as character, cValue as character, lFile as logical) as logical class FormData
+    local cFileName as character
+    local oFile as object
+    default lFile := .f.
+
+    if empty(::cBoundary)
+        return .f.
+    endif
+
+    if lFile
+        oFile := myspace.FileData():New(cValue)
+        cFileName := '; filename="'+oFile:cFilePath+'"'
+        cValue := oFile:GetBinContent(oFile:cFilePath)
+    endif
+    
+    ::cBody += 'Content-Disposition: form-data; name="'+cKey+'"' + cFileName
+    if oFile <> Nil
+        ::cBody += CRLF + 'Content-Type: ' + oFile:cContentType
+    endif
+    ::cBody += ::cSpaceToContent
+    ::cBody += cValue
+    ::cBody += CRLF
+
+return .t.
+
+
+method GetBodyContent() as character class FormData
+return ::cBody
