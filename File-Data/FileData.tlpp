@@ -1,0 +1,74 @@
+#include 'tlpp-core.th'
+#include 'protheus.ch'
+#include 'fileio.ch'
+
+namespace myspace
+
+class FileData
+    public data cFilePath       as character
+    public data cFileName       as character
+    public data cContentType    as character
+
+    public method New() constructor
+
+    private method GetFileData()
+
+    static method GetBinContent() as character
+    static method FileGenerateFromBase64() as logical
+    
+endclass
+
+
+method New(cFilePath as character) class FileData
+    ::GetFileData(cFilePath)
+return self
+
+
+method GetFileData(cFilePath as character) class FileData
+    local cName as character
+    local cExtension as character
+
+    SplitPath( cFilePath,,, @cName, @cExtension )
+    ::cFilePath := cFilePath
+    ::cFileName := cName + cExtension
+
+    if cExtension == '.pdf'
+        ::cContentType := 'application/pdf'
+    endif
+return Nil
+
+
+method GetBinContent(cFilePath as character) as character class FileData
+    local cBuffer as character
+    local nHandle as numeric
+    local nLength as numeric
+
+    if !File(cFilePath)
+        return ''
+    endif
+
+    nHandle := FOpen(cFilePath)
+    If nHandle > 0
+        nLength := FSeek(nHandle, 0, 2)
+        FSeek(nHandle, 0)
+        FRead(nHandle, @cBuffer, nLength)
+        FClose(nHandle)
+    EndIf
+
+return cBuffer
+
+
+method FileGenerateFromBase64(cFilePath as character, cBuffer as character) as logical class FileData
+    local nHandle as numeric
+
+    if File(cFilePath)
+        if FErase(cFilePath) < 0
+            return .f.
+        endif
+    endif
+
+    nHandle := FCreate(cFilePath)
+    FWrite(nHandle, decode64(cBuffer))
+    FClose(nHandle)
+
+return .t.
